@@ -330,6 +330,7 @@ PINECONE_API_KEY=your_key
 LANGSMITH_API_KEY=your_key
 LANGSMITH_TRACING=true
 LANGSMITH_PROJECT=R3F-Document-Helper-Agent
+INDEX_NAME=<Your pinecone index name>
 ```
 
 Keep `.env` local and **never commit it**.
