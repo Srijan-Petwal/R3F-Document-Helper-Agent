@@ -1,7 +1,8 @@
 <div align="center">
 
-<img src="./r3f-logo.png" alt="React Three Fiber" width="100%">
-
+<p align="center">
+  <img src="./r3f-logo.png" alt="React Three Fiber" width="1200">
+</p>
 
 # R3F Document Helper Agent
 
