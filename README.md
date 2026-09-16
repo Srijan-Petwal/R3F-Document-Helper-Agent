@@ -1,203 +1,126 @@
-# R3F Doc Helper Agent
+<div align="center">
 
 <p align="center">
-  <img src="src/document_helper_rag_based_agent/r3f-logo.png" alt="React Three Fiber" width="180"/>
+  <img src="./r3f-logo.png" alt="React Three Fiber" width="100%">
 </p>
 
-<p align="center">
-  <b>A RAG-based document helper agent for navigating and understanding React Three Fiber documentation.</b>
-</p>
+# R3F Document Helper Agent
 
-<p align="center">
-  Retrieval • Agents • RAG • React Three Fiber • LangGraph • Pinecone
-</p>
+### A RAG-based agent for working with React Three Fiber documentation.
+
+**RAG · Agents · LangGraph · Pinecone · React Three Fiber**
+
+[View Repository](https://github.com/Srijan-Petwal/R3F-Document-Helper-Agent)
+
+</div>
 
 ---
 
-## What is this?
+## Overview
 
-I built **R3F Doc Helper Agent** as a practical experiment in combining **Retrieval-Augmented Generation with an agentic workflow**.
+I built this project to explore how an LLM can work with **real documentation instead of relying only on its internal knowledge**.
 
-The idea is simple:
+The agent retrieves relevant React Three Fiber documentation from a Pinecone vector store and uses it as context while answering questions.
 
-> Instead of asking an LLM to answer questions about React Three Fiber from whatever knowledge it already has, give it access to the actual documentation and let it retrieve the relevant context before answering.
+Rather than making retrieval a fixed step in every query, the retrieval system is exposed as a **tool to a LangGraph agent**.
 
-The system crawls the relevant documentation, processes and embeds the content, stores it in a vector database, and exposes retrieval as a tool that the agent can use when answering questions.
-
-This started as a document/RAG project, but the goal was to move beyond a simple `query → retrieve → answer` pipeline and explore how an **agent can decide when it needs external context**.
+```text
+Documentation → Retrieval → Agent → Answer
+```
 
 ---
 
 ## Demo
 
-The repository contains a demo of the application:
+The repository contains a demo video:
 
-**`document-helper-agent-R3F-demo (1).webm`**
+**[▶ View Demo](./document-helper-agent-R3F-demo%20(1).webm)**
 
-The video is kept in the root directory of the repository.
+> If GitHub does not render the `.webm` inline, open the video file directly from the repository.
 
 ---
 
 ## Architecture
 
-At a high level, the project is divided into two stages:
-
 ```text
-                    ┌─────────────────────┐
-                    │  React Three Fiber  │
-                    │   Documentation     │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │    Tavily Crawl     │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │ LangChain Documents │
-                    │ + URL Metadata      │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │ Text Splitting      │
-                    │ RecursiveCharacter  │
-                    │ TextSplitter        │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │     Embeddings      │
-                    │     OpenRouter      │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │      Pinecone       │
-                    │    Vector Store     │
-                    └──────────┬──────────┘
-                               │
-                               │ retrieve_context
-                               ▼
-                    ┌─────────────────────┐
-                    │     LangGraph       │
-                    │       Agent         │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │      Response       │
-                    └─────────────────────┘
+        React Three Fiber Docs
+                  │
+                  ▼
+           Tavily Crawl
+                  │
+                  ▼
+        Document Processing
+                  │
+                  ▼
+          Text Splitting
+                  │
+                  ▼
+             Embeddings
+                  │
+                  ▼
+             Pinecone
+                  │
+                  ▼
+          ┌───────────────┐
+          │   LangGraph   │
+          │     Agent     │
+          └───────┬───────┘
+                  │
+                  ▼
+              Response
 ```
 
----
-
-## How it works
-
-### 1. Documentation ingestion
-
-The documentation is crawled using **Tavily Crawl**.
-
-The crawled pages are converted into LangChain `Document` objects while retaining useful metadata such as the source URL.
-
-```text
-Documentation
-      ↓
-Tavily Crawl
-      ↓
-LangChain Documents
-      ↓
-Recursive Character Text Splitter
-      ↓
-Embeddings
-      ↓
-Pinecone
-```
-
-The text is split into smaller chunks before embedding so that retrieval can return focused pieces of documentation instead of entire pages.
-
----
-
-### 2. Embeddings and vector storage
-
-The chunks are converted into vector representations and stored in **Pinecone**.
-
-The embedding workflow uses OpenRouter through LangChain's `OpenAIEmbeddings` interface with:
-
-```text
-nvidia/nemotron-3-embed-1b:free
-```
-
-The ingestion pipeline also batches embedding requests to make the process more manageable.
-
----
-
-### 3. Agentic retrieval
-
-The interesting part of the project is the retrieval layer.
-
-Instead of hardcoding retrieval as the first step for every query, the Pinecone retriever is exposed to the agent through a retrieval tool:
-
-```text
-retrieve_context
-```
-
-The agent is implemented using **LangGraph/LangChain**.
-
-Conceptually:
+### Retrieval Flow
 
 ```text
 User Question
       ↓
     Agent
-      │
-      ├── Does it need documentation?
-      │
-      └── retrieve_context
-                ↓
-             Pinecone
-                ↓
-        Relevant R3F Context
-                ↓
-             Agent
-                ↓
-             Answer
+      ↓
+retrieve_context
+      ↓
+   Pinecone
+      ↓
+Relevant R3F Documentation
+      ↓
+    Agent
+      ↓
+   Answer
 ```
-
-This allows the project to explore a more flexible workflow than a traditional fixed RAG chain.
 
 ---
 
 ## Tech Stack
 
-### AI / Agentic
+### Agent / LLM
 
-* **LangChain** — LLM and retrieval ecosystem
-* **LangGraph** — agent workflow/orchestration
-* **OpenRouter** — model and embedding access
-* **LangSmith** — tracing and observability
+- Python
+- LangChain
+- LangGraph
+- OpenRouter
+- LangSmith
 
-### Retrieval / Data
+### RAG
 
-* **Tavily Crawl** — documentation ingestion
-* **Pinecone** — vector database
-* **RecursiveCharacterTextSplitter** — document chunking
-* **LangChain Document** — document representation and metadata
+- Tavily Crawl
+- Pinecone
+- LangChain Documents
+- RecursiveCharacterTextSplitter
+- Embeddings
 
 ### Development
 
-* **Python 3.13.5**
-* **uv** — Python project and dependency management
-* **python-dotenv** — environment configuration
+- uv
+- python-dotenv
 
 ---
 
 ## Project Structure
 
 ```text
-document-helper-rag-based-agent/
+R3F-Document-Helper-Agent/
 │
+├── r3f-logo.png
 ├── document-helper-agent-R3F-demo (1).webm
 ├── README.md
 ├── .gitignore
@@ -207,7 +130,6 @@ document-helper-rag-based-agent/
 │
 └── src/
     └── document_helper_rag_based_agent/
-        │
         ├── __init__.py
         ├── ingestion.py
         ├── logger.py
@@ -219,137 +141,91 @@ document-helper-rag-based-agent/
             └── test.py
 ```
 
-### Important files
+### Main Components
 
-**`ingestion.py`**
+- **`ingestion.py`** — crawls, processes, chunks and embeds the documentation.
+- **`backend/core.py`** — retrieval tool and agent workflow.
+- **`ui.py`** — application interface.
+- **`logger.py`** — logging utilities.
 
-Handles the documentation ingestion pipeline:
+---
+
+## How It Works
+
+### 1. Documentation Ingestion
+
+The R3F documentation is crawled using Tavily and converted into LangChain documents.
 
 ```text
-Tavily → Documents → Chunking → Embeddings → Pinecone
+R3F Documentation
+        ↓
+    Tavily Crawl
+        ↓
+LangChain Documents
+        ↓
+    Text Splitting
 ```
 
-**`backend/core.py`**
+The documents are split into smaller chunks before embedding so retrieval can return focused pieces of documentation.
 
-Contains the retrieval/agent backend, including the Pinecone retrieval tool and LangGraph/LangChain agent workflow.
+### 2. Embeddings & Vector Storage
 
-**`ui.py`**
+The chunks are converted into embeddings and stored in **Pinecone**.
 
-Contains the user interface for interacting with the document helper.
+The embedding workflow uses OpenRouter through LangChain's embedding interface.
 
-**`logger.py`**
+### 3. Agentic Retrieval
 
-Handles project logging.
+The Pinecone retriever is exposed to the agent through a retrieval tool:
 
----
-
-## Getting Started
-
-### Prerequisites
-
-You'll need:
-
-* Python 3.13+
-* `uv`
-* A Pinecone account
-* An OpenRouter API key
-* A Tavily API key
-* A LangSmith API key if tracing is enabled
-
----
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/<your-username>/document-helper-rag-based-agent.git
-
-cd document-helper-rag-based-agent
+```text
+retrieve_context
 ```
 
----
+The agent can use this tool when it needs relevant R3F documentation.
 
-### 2. Create the environment
-
-This project uses **uv** for dependency and environment management.
-
-```bash
-uv sync
+```text
+Question
+   ↓
+ Agent
+   ↓
+Tool Call
+   ↓
+Pinecone Retrieval
+   ↓
+Documentation Context
+   ↓
+ Agent
+   ↓
+Answer
 ```
-
-Activate the environment if required:
-
-**Windows**
-
-```bash
-.venv\Scripts\activate
-```
-
-**macOS / Linux**
-
-```bash
-source .venv/bin/activate
-```
-
----
-
-### 3. Configure environment variables
-
-Create a `.env` file in the project root:
-
-```env
-OPENROUTER_API_KEY=your_key
-TAVILY_API_KEY=your_key
-PINECONE_API_KEY=your_key
-
-LANGSMITH_API_KEY=your_key
-LANGSMITH_TRACING=true
-LANGSMITH_PROJECT=document-helper-rag-based-agent
-```
-
-**Do not commit `.env`.**
-
-The repository should only contain a safe `.env.example` file if environment-variable documentation is needed.
-
----
-
-## Running the project
-
-Run the ingestion pipeline first so that the documentation is crawled, embedded, and stored in Pinecone.
-
-Then start the application/UI using the project's entry point.
-
-The exact command depends on the configured project entry point in `pyproject.toml`.
 
 ---
 
 ## Why R3F?
 
-React Three Fiber is a good example of a domain where documentation matters.
+React Three Fiber sits at the intersection of **React and Three.js**, with its own abstractions and ecosystem.
 
-The ecosystem involves concepts from both **React and Three.js**, along with abstractions introduced by R3F and its surrounding libraries.
+When working with APIs such as:
 
-When working with things like:
+- `Canvas`
+- `useFrame`
+- `useThree`
+- Drei
+- loaders
+- materials
+- scene objects
+- physics integrations
 
-* `Canvas`
-* `useFrame`
-* `useThree`
-* Drei
-* Three.js objects
-* loaders
-* materials
-* scene graphs
-* rendering
-* physics integrations
+having the actual documentation available to the model is useful.
 
-the difference between a plausible answer and an answer grounded in the actual documentation can be significant.
-
-That made R3F a useful domain for experimenting with document-grounded agents.
+That made R3F a good domain for experimenting with document-grounded agents.
 
 ---
 
-## RAG vs Agentic RAG
+## RAG → Agentic RAG
 
-A traditional RAG pipeline generally looks like:
+A conventional RAG pipeline looks like:
 
 ```text
 Question
@@ -363,72 +239,133 @@ LLM
 Answer
 ```
 
-This project explores:
+This project experiments with:
 
 ```text
 Question
    ↓
 Agent
    ↓
-Decide / use tool
+Tool Call
    ↓
-Retrieve documentation
+Retrieve Documentation
    ↓
-Reason over context
+Reason
    ↓
 Answer
 ```
 
-The distinction is small at the surface but interesting from an engineering perspective.
-
-The retrieval system becomes a **capability available to the agent**, rather than simply a mandatory preprocessing step.
+The retriever becomes a **capability available to the agent**, rather than a mandatory first step.
 
 ---
 
 ## Observability
 
-The project uses **LangSmith** for tracing the agent workflow.
+The project uses **LangSmith** for tracing the workflow.
 
-This makes it possible to inspect things such as:
+This helps inspect:
 
-* Agent execution
-* Tool calls
-* Retrieval steps
-* LLM calls
-* Execution flow
-* Debugging information
+- Agent execution
+- Tool calls
+- Retrieval
+- LLM calls
+- Execution flow
 
-For agentic systems, being able to see *what the system actually did* is almost as important as seeing the final answer.
+For agentic systems, understanding *what the agent actually did* is almost as important as the final answer.
 
 ---
 
-## What I explored while building this
+## Getting Started
 
-This project was less about building another chatbot and more about understanding the pieces underneath one.
+### Prerequisites
 
-Some of the things I worked through were:
+You'll need:
 
-* Crawling real documentation instead of relying on static datasets
-* Converting web content into structured documents
-* Chunking documentation for retrieval
-* Embedding and indexing documents
-* Building a Pinecone retrieval layer
-* Exposing retrieval as an agent tool
-* Building the workflow with LangGraph
-* Connecting LangChain components through OpenRouter
-* Tracing agent execution with LangSmith
-* Debugging tool-bound model execution
-* Managing the project with `uv`
+- Python 3.13+
+- uv
+- Pinecone account
+- OpenRouter API key
+- Tavily API key
+- LangSmith API key
 
-There were also a few places where the theory and the actual implementation behaved differently than expected — which, honestly, was part of the point of building it.
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Srijan-Petwal/R3F-Document-Helper-Agent.git
+
+cd R3F-Document-Helper-Agent
+```
+
+### 2. Install Dependencies
+
+This project uses `uv` for dependency management.
+
+```bash
+uv sync
+```
+
+Activate the environment if required.
+
+**Windows:**
+
+```bash
+.venv\Scripts\activate
+```
+
+**macOS / Linux:**
+
+```bash
+source .venv/bin/activate
+```
+
+### 3. Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+OPENROUTER_API_KEY=your_key
+TAVILY_API_KEY=your_key
+PINECONE_API_KEY=your_key
+
+LANGSMITH_API_KEY=your_key
+LANGSMITH_TRACING=true
+LANGSMITH_PROJECT=R3F-Document-Helper-Agent
+```
+
+Keep `.env` local and **never commit it**.
+
+### 4. Run
+
+Run the ingestion pipeline first to populate Pinecone with the documentation.
+
+Then start the application through the configured project entry point.
+
+---
+
+## What I Learned
+
+This project was mainly about understanding the pieces underneath a RAG agent:
+
+- Crawling real documentation
+- Document processing and chunking
+- Embeddings and vector search
+- Pinecone retrieval
+- Tool-based retrieval
+- LangGraph agent workflows
+- OpenRouter integration
+- LangSmith tracing
+- Debugging agent execution
+- Managing the project with `uv`
+
+The goal wasn't just to make another chatbot.
+
+It was to understand what happens when you give an LLM **external knowledge, retrieval and tools**, and let it decide how to use them.
 
 ---
 
 ## Current Status
 
-The core retrieval pipeline and basic UI are implemented.
-
-The current version focuses on the fundamental loop:
+The core retrieval pipeline and UI are implemented.
 
 ```text
 Documentation
@@ -437,46 +374,47 @@ Documentation
       ↓
    Pinecone
       ↓
-   Retrieval
+  Retrieval
       ↓
     Agent
       ↓
-    Answer
+   Answer
 ```
 
-There is still plenty of room to improve the agent's reasoning, retrieval quality, evaluation, and overall product experience.
+Possible next steps include better retrieval evaluation, reranking, source attribution, memory and improved agent routing.
 
 ---
 
 ## Future Improvements
 
-Some directions I want to explore:
-
-* Better retrieval evaluation
-* Hybrid / reranked retrieval
-* More robust source attribution
-* Improved agent/tool routing
-* Conversation memory
-* Streaming responses
-* Automated RAG evaluation
-* Better handling of documentation versions
-* More detailed LangSmith evaluation
-* Expanding beyond R3F documentation
+- Better retrieval evaluation
+- Reranking
+- Hybrid retrieval
+- Source attribution
+- Conversation memory
+- Streaming responses
+- Automated RAG evaluation
+- Documentation versioning
+- Improved agent routing
 
 ---
 
-## A small note on the project
+## Repository
+
+<div align="center">
+
+### [View R3F Document Helper Agent on GitHub →](https://github.com/Srijan-Petwal/R3F-Document-Helper-Agent)
+
+</div>
+
+---
+
+## A Note
 
 I tend to learn these systems by actually building them rather than trying to understand every abstraction beforehand.
 
 This project was one of those experiments.
 
-The interesting part wasn't just getting a model to answer a question. It was understanding what happens when you give an LLM **tools, external knowledge, retrieval, and an execution graph**, and then start debugging what it actually does.
+The interesting part wasn't just getting a model to answer a question. It was understanding what happens when you give an LLM **external knowledge, retrieval and tools**, and then start debugging what it actually does.
 
 That's where the gap between *"I know what RAG is"* and *"I can build and debug a RAG system"* becomes pretty obvious.
-
----
-
-## License
-
-This project is intended primarily as a learning and experimentation project.
