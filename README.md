@@ -18,7 +18,7 @@
 
 ## Overview
 
-Most LLMs answer R3F questions from memory which drifts out of date. This agent instead **retrieves Official R3F documentation from Pinecone** and reasons over it, using a **LangGraph agent** that calls retrieval as a *tool* rather than a fixed pipeline step.
+Most LLMs answer R3F questions from memory — which drifts out of date. This agent instead **retrieves real R3F documentation from Pinecone** and reasons over it, using a **LangGraph agent** that calls retrieval as a *tool* rather than a fixed pipeline step.
 
 ```text
 Documentation → Retrieval → Agent → Answer
@@ -30,34 +30,67 @@ Documentation → Retrieval → Agent → Answer
 ## Screenshots
 
 <p align="center">
-  <img src="./demo/1.png" width="45%"/>
-  <img src="./demo/2.png" width="45%"/>
-  <br/>
-  <img src="./demo/3.png" width="45%"/>
-  <img src="./demo/4.png" width="45%"/>
+  <img src="./demo/1.png" width="700"/>
+</p>
+<p align="center">
+  <img src="./demo/2.png" width="700"/>
+</p>
+<p align="center">
+  <img src="./demo/3.png" width="700"/>
+</p>
+<p align="center">
+  <img src="./demo/4.png" width="700"/>
 </p>
 
 ---
 
 ## Architecture
 
-<details>
-<summary><b>Ingestion pipeline</b> (click to expand)</summary>
+```text
+        React Three Fiber Docs
+                  │
+                  ▼
+           Tavily Crawl
+                  │
+                  ▼
+        Document Processing
+                  │
+                  ▼
+          Text Splitting
+                  │
+                  ▼
+             Embeddings
+                  │
+                  ▼
+             Pinecone
+                  │
+                  ▼
+          ┌───────────────┐
+          │   LangGraph   │
+          │     Agent     │
+          └───────┬───────┘
+                  │
+                  ▼
+              Response
+```
+
+### Retrieval Flow
 
 ```text
-React Three Fiber Docs → Tavily Crawl → Document Processing
-       → Text Splitting → Embeddings → Pinecone
+User Question
+      ↓
+    Agent
+      ↓
+retrieve_context
+      ↓
+   Pinecone
+      ↓
+Relevant R3F Documentation
+      ↓
+    Agent
+      ↓
+   Answer
 ```
-</details>
-
-<details>
-<summary><b>Retrieval flow</b> (click to expand)</summary>
-
-```text
-User Question → Agent → retrieve_context (tool call)
-       → Pinecone → Relevant R3F Docs → Agent → Answer
-```
-</details>
 
 ## Tech Stack
 
@@ -85,7 +118,7 @@ R3F-Document-Helper-Agent/
 
 ## Getting Started
 
-**Prerequisites:** Python 3.13+ · uv · Pinecone, OpenRouter(or any other llm vendor), Tavily & LangSmith API keys
+**Prerequisites:** Python 3.13+ · uv · Pinecone, OpenRouter, Tavily & LangSmith API keys
 
 ```bash
 git clone https://github.com/Srijan-Petwal/R3F-Document-Helper-Agent.git
@@ -122,11 +155,17 @@ R3F sits at the intersection of React and Three.js, with its own abstractions (`
 > [!NOTE]
 > This project uses **LangSmith** to trace every agent execution, tool call, and retrieval step — useful because for agentic systems, *what the agent actually did* matters almost as much as its final answer.
 
+<p align="center">
+  <img src="./demo/5.png" width="700"/>
+  <br/>
+  <sub>LangSmith trace for a GLTF-related query</sub>
+</p>
+
 ## What I Learned
 
 Crawling & chunking docs · embeddings & vector search · tool-based retrieval · LangGraph agent workflows · LangSmith tracing · debugging agent behavior · managing a project with `uv`.
 
-The goal wasn't another chatbot, it was understanding what happens when an LLM gets real external knowledge, retrieval, and tools, and has to decide how to use them.
+The goal wasn't another chatbot — it was understanding what happens when an LLM gets real external knowledge, retrieval, and tools, and has to decide how to use them.
 
 > [!CAUTION]
 > This is an **experimental / learning project**, not a production-hardened tool. Expect rough edges.
